@@ -1,42 +1,44 @@
+import copy
+import functools
 from datetime import datetime
-from functools import wraps
 from time import sleep
 from typing import Callable
 
 
-def no_args_logger(func: Callable):
-    """Logger decorator without args"""
+class no_args_logger:
+    def __init__(self, func: Callable):
+        self._func = func
+        functools.update_wrapper(self, func)  # preserve func name/docstring
 
-    @wraps(func)  # preserve func name/docstring
-    def wrapper(*func_args, **func_kwargs):
+    def __call__(self, *func_args, **func_kwargs):
         start = datetime.now()
-        print(f"Start {func.__name__} at {start}")
+        print(f"Start {self._func.__name__} at {start}")
 
-        res = func(*func_args, **func_kwargs)
+        res = self._func(*func_args, **func_kwargs)
 
         end = datetime.now()
         duration = end - start
-        print(f"End {func.__name__} at {end}. Duration is {duration}")
+        print(f"End {self._func.__name__} at {end}. Duration is {duration}")
 
         return res
 
-    return wrapper
 
+class logger:
+    def __init__(self, *log_args, **log_kwargs):
+        self._log_args = copy.copy(log_args)
+        self._log_kwargs = log_kwargs.copy()
 
-def logger(*log_args, **log_kwargs):
-    """Logger decorator with args"""
-
-    def logger_wrapper(func: Callable):
-        @wraps(func)
+    def __call__(self, func: Callable):
+        @functools.wraps(func)
         def func_wrapper(*func_args, **func_kwargs):
             start = datetime.now()
             print(
                 f"Start {func.__name__} at {start}. "
-                f"Decorator args={log_args}, kwargs={log_kwargs}"
+                f"Decorator args={self._log_args}, kwargs={self._log_kwargs}"
             )
 
-            if "delay" in log_kwargs:
-                sleep(log_kwargs["delay"])
+            if "delay" in self._log_kwargs:
+                sleep(self._log_kwargs["delay"])
 
             res = func(*func_args, **func_kwargs)
 
@@ -47,8 +49,6 @@ def logger(*log_args, **log_kwargs):
             return res
 
         return func_wrapper
-
-    return logger_wrapper
 
 
 @no_args_logger
